@@ -1,0 +1,3 @@
+- insert:
+    - id: tool-jevagent
+      name: dsh-plugin-jevagent

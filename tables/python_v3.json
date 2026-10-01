@@ -1,0 +1,192 @@
+{
+  "schema_version": "1.0",
+  "table_id": "python_v3",
+  "target_language": "python",
+  "skeleton_ref": "common_skeleton_v1",
+  "core_conformance": {
+    "/core/define": "/python/function/define",
+    "/core/return": "/python/function/return",
+    "/core/if": "/python/control/if",
+    "/core/elif": "/python/control/elif",
+    "/core/else": "/python/control/else",
+    "/core/loop/for": "/python/control/loop/for",
+    "/core/loop/while": "/python/control/loop/while",
+    "/core/loop/break": "/python/control/loop/break",
+    "/core/loop/continue": "/python/control/loop/continue",
+    "/core/var/declare": "/python/data/declare",
+    "/core/io/output": "/python/io/output",
+    "/core/io/input": {
+      "status": "supported",
+      "node": "/python/io/input"
+    }
+  },
+  "required_imports": {
+    "sqrt": "math",
+    "pi": "math",
+    "sin": "math",
+    "cos": "math",
+    "ceil": "math",
+    "floor": "math"
+  },
+  "confusions": [
+    {
+      "wrong": "printf",
+      "right": "/python/io/output",
+      "action": "correct",
+      "hint": "Python 输出请使用 输出() 或 print()"
+    }
+  ],
+  "keyword_blacklist": [
+    "def", "if", "elif", "else", "while", "for", "in", "return", "break",
+    "continue", "import", "from", "as", "class", "try", "except", "finally",
+    "with", "yield", "lambda", "pass", "raise", "True", "False", "None",
+    "and", "or", "not", "is", "len", "range", "print", "input", "int",
+    "str", "float", "bool", "list", "dict", "set", "tuple"
+  ],
+  "root": {
+    "type": "branch",
+    "choices": ["control", "data", "function", "io", "error", "module"]
+  },
+  "semantic_mappings": {
+    "/semantic/function/define": "/python/function/define",
+    "/semantic/function/call": "/python/function/call",
+    "/semantic/function/return": "/python/function/return",
+    "/semantic/control/branch/if": "/python/control/if",
+    "/semantic/control/branch/elif": "/python/control/elif",
+    "/semantic/control/branch/else": "/python/control/else",
+    "/semantic/control/loop/for": "/python/control/loop/for",
+    "/semantic/control/loop/while": "/python/control/loop/while",
+    "/semantic/control/loop/break": "/python/control/loop/break",
+    "/semantic/control/loop/continue": "/python/control/loop/continue",
+    "/semantic/data/assign": "/python/data/assign",
+    "/semantic/data/declare": "/python/data/declare",
+    "/semantic/io/output": "/python/io/output",
+    "/semantic/io/input": "/python/io/input",
+    "/semantic/module/import": "/python/module/import",
+    "/semantic/module/import/local": "/python/module/import"
+  },
+  "nodes": {
+    "/python/function/call": {
+      "type": "leaf",
+      "template": "{call}",
+      "spec_template": "{call}",
+      "slots": ["call"],
+      "maps_from": ["/semantic/function/call"]
+    },
+    "/python/function/define": {
+      "type": "leaf",
+      "template": "def {func_name}({args}):",
+      "spec_template": "定义 {func_name}({typed_args}) -> {ret_type}:",
+      "slots": ["func_name", "args", "typed_args", "ret_type"],
+      "maps_from": ["/semantic/function/define"]
+    },
+    "/python/function/return": {
+      "type": "leaf",
+      "template": "return {expr}",
+      "spec_template": "返回 {expr}",
+      "slots": ["expr"],
+      "maps_from": ["/semantic/function/return"]
+    },
+    "/python/control/if": {
+      "type": "leaf",
+      "template": "if {cond}:",
+      "spec_template": "如果 {cond}:",
+      "slots": ["cond"],
+      "maps_from": ["/semantic/control/branch/if"]
+    },
+    "/python/control/elif": {
+      "type": "leaf",
+      "template": "elif {cond}:",
+      "spec_template": "否则如果 {cond}:",
+      "slots": ["cond"],
+      "maps_from": ["/semantic/control/branch/elif"]
+    },
+    "/python/control/else": {
+      "type": "leaf",
+      "template": "else:",
+      "spec_template": "否则:",
+      "slots": [],
+      "maps_from": ["/semantic/control/branch/else"]
+    },
+    "/python/control/loop/for": {
+      "type": "leaf",
+      "template": "for {var} in {iter}:",
+      "spec_template": "对于 {var} 中的 {iter}:",
+      "slots": ["var", "iter"],
+      "maps_from": ["/semantic/control/loop/for"]
+    },
+    "/python/control/loop/while": {
+      "type": "leaf",
+      "template": "while {cond}:",
+      "spec_template": "当 {cond}:",
+      "slots": ["cond"],
+      "maps_from": ["/semantic/control/loop/while"]
+    },
+    "/python/control/loop/break": {
+      "type": "leaf",
+      "template": "break",
+      "spec_template": "跳出",
+      "slots": [],
+      "maps_from": ["/semantic/control/loop/break"]
+    },
+    "/python/control/loop/continue": {
+      "type": "leaf",
+      "template": "continue",
+      "spec_template": "继续",
+      "slots": [],
+      "maps_from": ["/semantic/control/loop/continue"]
+    },
+    "/python/io/output": {
+      "type": "leaf",
+      "template": "print({expr})",
+      "spec_template": "输出({expr})",
+      "slots": ["expr"],
+      "maps_from": ["/semantic/io/output"]
+    },
+    "/python/io/input": {
+      "type": "leaf",
+      "template": "input({expr})",
+      "spec_template": "输入({expr})",
+      "slots": ["expr"],
+      "maps_from": ["/semantic/io/input"]
+    },
+    "/python/data/assign": {
+      "type": "leaf",
+      "template": "{var} = {expr}",
+      "spec_template": "{var} = {expr}",
+      "slots": ["var", "expr"],
+      "maps_from": ["/semantic/data/assign"]
+    },
+    "/python/data/declare": {
+      "type": "leaf",
+      "template": "{var} = {expr}",
+      "spec_template": "设 {var} = {expr}",
+      "slots": ["var", "expr"],
+      "maps_from": ["/semantic/data/declare"]
+    },
+    "/python/module/import": {
+      "type": "leaf",
+      "template": "import {module}",
+      "spec_template": "引入 {module}",
+      "slots": ["module"],
+      "placement": "imports",
+      "maps_from": ["/semantic/module/import"]
+    },
+    "/python/module/import_as": {
+      "type": "leaf",
+      "template": "import {module} as {alias}",
+      "spec_template": "引入 {module} 作为 {alias}",
+      "slots": ["module", "alias"],
+      "placement": "imports",
+      "maps_from": ["/semantic/module/import"]
+    },
+    "/python/module/from_import": {
+      "type": "leaf",
+      "template": "from {module} import {names}",
+      "spec_template": "从 {module} 引入 {names}",
+      "slots": ["module", "names"],
+      "placement": "imports",
+      "maps_from": ["/semantic/module/import"]
+    }
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0",
+  "table_id": "syntax_core_v1",
+  "target_language": "abstract",
+  "core_nodes": {
+    "/core/define": {
+      "canonical": "定义",
+      "aliases": ["函数", "定义函数"]
+    },
+    "/core/return": {
+      "canonical": "返回",
+      "aliases": ["回"]
+    },
+    "/core/if": {
+      "canonical": "如果",
+      "aliases": ["若"]
+    },
+    "/core/elif": {
+      "canonical": "否则如果",
+      "aliases": ["否则若"]
+    },
+    "/core/else": {
+      "canonical": "否则"
+    },
+    "/core/loop/for": {
+      "canonical": "对于",
+      "aliases": ["遍历"]
+    },
+    "/core/loop/while": {
+      "canonical": "当",
+      "aliases": ["循环当"]
+    },
+    "/core/loop/break": {
+      "canonical": "跳出",
+      "aliases": ["break"]
+    },
+    "/core/loop/continue": {
+      "canonical": "继续",
+      "aliases": ["continue"]
+    },
+    "/core/var/declare": {
+      "canonical": "设",
+      "aliases": ["声明", "定义变量"]
+    },
+    "/core/io/output": {
+      "canonical": "输出",
+      "aliases": ["打印"]
+    },
+    "/core/io/input": {
+      "canonical": "输入",
+      "aliases": ["读取"]
+    }
+  },
+  "core_operators": {
+    "<=": { "python": "<=", "c": "<=", "shell": "-le" },
+    ">=": { "python": ">=", "c": ">=", "shell": "-ge" },
+    "<": { "python": "<", "c": "<", "shell": "-lt" },
+    ">": { "python": ">", "c": ">", "shell": "-gt" },
+    "==": { "python": "==", "c": "==", "shell": "-eq" },
+    "!=": { "python": "!=", "c": "!=", "shell": "-ne" },
+    "并且": { "python": "and", "c": "&&", "shell": "&&" },
+    "且": { "python": "and", "c": "&&", "shell": "&&" },
+    "或者": { "python": "or", "c": "||", "shell": "||" },
+    "或": { "python": "or", "c": "||", "shell": "||" },
+    "非": { "python": "not", "c": "!", "shell": "!" },
+    "真": { "python": "True", "c": "true", "shell": "true" },
+    "假": { "python": "False", "c": "false", "shell": "false" },
+    "空": { "python": "None", "c": "NULL", "shell": "\"\"" }
+  }
+}

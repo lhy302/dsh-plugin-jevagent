@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "table_id": "semantic_v1",
+  "skeleton_ref": "common_skeleton_v1",
+  "nodes": {
+    "/semantic/control/loop/for": { "type": "leaf", "maps_to": "for", "description": "迭代集合" },
+    "/semantic/control/loop/while": { "type": "leaf", "maps_to": "while", "description": "条件循环" },
+    "/semantic/control/branch/if": { "type": "leaf", "maps_to": "if", "description": "条件分支" },
+    "/semantic/control/branch/elif": { "type": "leaf", "maps_to": "elif", "description": "否则如果分支" },
+    "/semantic/control/branch/else": { "type": "leaf", "maps_to": "else", "description": "否则分支" },
+    "/semantic/function/define": { "type": "leaf", "maps_to": "define", "description": "函数定义" },
+    "/semantic/function/call": { "type": "leaf", "maps_to": "call", "description": "函数调用" },
+    "/semantic/function/return": { "type": "leaf", "maps_to": "return", "description": "返回值" },
+    "/semantic/data/assign": { "type": "leaf", "maps_to": "assign", "description": "变量赋值" },
+    "/semantic/data/declare": { "type": "leaf", "maps_to": "declare", "description": "变量声明与初始化" },
+    "/semantic/control/loop/break": { "type": "leaf", "maps_to": "break", "description": "循环跳出" },
+    "/semantic/control/loop/continue": { "type": "leaf", "maps_to": "continue", "description": "循环继续" },
+    "/semantic/io/output": { "type": "leaf", "maps_to": "output", "description": "输出打印" }
+  }
+}

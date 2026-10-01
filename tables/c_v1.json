@@ -1,0 +1,196 @@
+{
+  "schema_version": "1.0",
+  "table_id": "c_v1",
+  "target_language": "c",
+  "skeleton_ref": "common_skeleton_v1",
+  "core_conformance": {
+    "/core/define": "/c/function/define",
+    "/core/return": "/c/function/return",
+    "/core/if": "/c/control/if",
+    "/core/elif": "/c/control/elif",
+    "/core/else": "/c/control/else",
+    "/core/loop/for": {
+      "status": "conditional",
+      "node": "/c/control/for",
+      "requires": ["集合带有已知长度绑定或哨兵"]
+    },
+    "/core/loop/while": "/c/control/while",
+    "/core/loop/break": "/c/control/loop/break",
+    "/core/loop/continue": "/c/control/loop/continue",
+    "/core/var/declare": "/c/data/declare",
+    "/core/io/output": "/c/io/output",
+    "/core/io/input": {
+      "status": "conditional",
+      "node": "/c/io/input",
+      "requires": ["参数为已声明类型的变量（用于生成取地址符 &）"]
+    }
+  },
+  "required_imports": {
+    "printf": "<stdio.h>",
+    "scanf": "<stdio.h>",
+    "puts": "<stdio.h>",
+    "malloc": "<stdlib.h>",
+    "free": "<stdlib.h>",
+    "strlen": "<string.h>",
+    "strcpy": "<string.h>",
+    "sqrt": "<math.h>",
+    "pow": "<math.h>"
+  },
+  "confusions": [
+    {
+      "wrong": "print",
+      "right": "/c/io/output",
+      "action": "error",
+      "hint": "C 语言中不支持 print()，请使用 printf() 或 输出()"
+    },
+    {
+      "wrong": "len",
+      "right": null,
+      "action": "error",
+      "hint": "C 无 len，请用 sizeof 或显式长度"
+    }
+  ],
+  "keyword_blacklist": [
+    "int", "char", "void", "float", "double", "bool", "const", "struct",
+    "return", "if", "else", "while", "for", "break", "continue", "printf",
+    "scanf", "NULL", "sizeof"
+  ],
+  "root": {
+    "type": "branch",
+    "choices": ["control", "data", "function", "io", "error", "module"]
+  },
+  "semantic_mappings": {
+    "/semantic/function/define": "/c/function/define",
+    "/semantic/function/call": "/c/function/call",
+    "/semantic/function/return": "/c/function/return",
+    "/semantic/control/branch/if": "/c/control/if",
+    "/semantic/control/branch/elif": "/c/control/elif",
+    "/semantic/control/branch/else": "/c/control/else",
+    "/semantic/control/loop/for": "/c/control/for",
+    "/semantic/control/loop/while": "/c/control/while",
+    "/semantic/control/loop/break": "/c/control/loop/break",
+    "/semantic/control/loop/continue": "/c/control/loop/continue",
+    "/semantic/data/declare": "/c/data/declare",
+    "/semantic/data/assign": "/c/data/assign",
+    "/semantic/io/output": "/c/io/output",
+    "/semantic/io/input": "/c/io/input",
+    "/semantic/module/import": "/c/module/include_system",
+    "/semantic/module/import/local": "/c/module/include_local"
+  },
+  "nodes": {
+    "/c/function/call": {
+      "type": "leaf",
+      "template": "{call};",
+      "spec_template": "{call}",
+      "slots": ["call"],
+      "maps_from": ["/semantic/function/call"]
+    },
+    "/c/data/assign": {
+      "type": "leaf",
+      "template": "{var} = {expr};",
+      "spec_template": "{var} = {expr}",
+      "slots": ["var", "expr"],
+      "maps_from": ["/semantic/data/assign"]
+    },
+    "/c/function/define": {
+      "type": "leaf",
+      "template": "{ret_type} {func_name}({typed_args}) {",
+      "spec_template": "定义 {func_name}({typed_args}) -> {ret_type}:",
+      "slots": ["func_name", "typed_args", "ret_type"],
+      "maps_from": ["/semantic/function/define"]
+    },
+    "/c/function/return": {
+      "type": "leaf",
+      "template": "return {expr};",
+      "spec_template": "返回 {expr}",
+      "slots": ["expr"],
+      "maps_from": ["/semantic/function/return"]
+    },
+    "/c/control/if": {
+      "type": "leaf",
+      "template": "if ({cond}) {",
+      "spec_template": "如果 {cond}:",
+      "slots": ["cond"],
+      "maps_from": ["/semantic/control/branch/if"]
+    },
+    "/c/control/elif": {
+      "type": "leaf",
+      "template": "} else if ({cond}) {",
+      "spec_template": "否则如果 {cond}:",
+      "slots": ["cond"],
+      "maps_from": ["/semantic/control/branch/elif"]
+    },
+    "/c/control/else": {
+      "type": "leaf",
+      "template": "} else {",
+      "spec_template": "否则:",
+      "slots": [],
+      "maps_from": ["/semantic/control/branch/else"]
+    },
+    "/c/control/loop/break": {
+      "type": "leaf",
+      "template": "break;",
+      "spec_template": "跳出",
+      "slots": [],
+      "maps_from": ["/semantic/control/loop/break"]
+    },
+    "/c/control/loop/continue": {
+      "type": "leaf",
+      "template": "continue;",
+      "spec_template": "继续",
+      "slots": [],
+      "maps_from": ["/semantic/control/loop/continue"]
+    },
+    "/c/control/for": {
+      "type": "leaf",
+      "template": "for ({init}; {cond}; {step}) {",
+      "spec_template": "对于 {var} 中的 {iter}:",
+      "slots": ["init", "cond", "step"],
+      "maps_from": ["/semantic/control/loop/for"]
+    },
+    "/c/control/while": {
+      "type": "leaf",
+      "template": "while ({cond}) {",
+      "spec_template": "当 {cond}:",
+      "slots": ["cond"],
+      "maps_from": ["/semantic/control/loop/while"]
+    },
+    "/c/data/declare": {
+      "type": "leaf",
+      "template": "{type} {var} = {expr};",
+      "spec_template": "设 {var} = {expr}",
+      "slots": ["type", "var", "expr"],
+      "maps_from": ["/semantic/data/declare"]
+    },
+    "/c/io/output": {
+      "type": "leaf",
+      "template": "printf(\"%s\\n\", {expr});",
+      "spec_template": "输出({expr})",
+      "slots": ["expr"],
+      "maps_from": ["/semantic/io/output"]
+    },
+    "/c/io/input": {
+      "type": "leaf",
+      "template": "scanf(\"%d\", &{var});",
+      "spec_template": "输入({var})",
+      "slots": ["var"],
+      "maps_from": ["/semantic/io/input"]
+    },
+    "/c/module/include_system": {
+      "type": "leaf",
+      "template": "#include <{header}>",
+      "spec_template": "引入系统 {header}",
+      "slots": ["header"],
+      "placement": "imports",
+      "maps_from": ["/semantic/module/import"]
+    },
+    "/c/module/include_local": {
+      "type": "leaf",
+      "template": "#include \"{header}\"",
+      "spec_template": "引入本地 {header}",
+      "slots": ["header"],
+      "placement": "imports",
+      "maps_from": ["/semantic/module/import/local"]
+    }
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "name": "dsh-plugin-jevagent",
+  "version": "3.0.0",
+  "description": "JevAgent plugin for DeepSeek Harness: two-file model, multi-language comment delimiters, verification firewall, import closure, core syntax conformance, and closed-set Jev decision engine",
+  "type": "module",
+  "main": "./lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "tables",
+    "cordis.patch.yml",
+    "README.md",
+    "package.json"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-slots"
+      ],
+      "platform": "web"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=4.0.1",
+    "@deepseek-ai/dsh-tools": ">=0.1.0"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh-plugin",
+    "jevagent",
+    "two-file-model",
+    "verification-firewall",
+    "import-closure",
+    "syntax-core",
+    "dsl",
+    "router"
+  ],
+  "author": "lhy302",
+  "license": "MIT"
+}

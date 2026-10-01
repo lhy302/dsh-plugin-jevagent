@@ -1,0 +1,10 @@
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+test/tmp/
+test/ai_e2e_workspace/
+.env
+.env.*
+*.local.*
+/GitHub推送操作指南.md

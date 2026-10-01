@@ -1,0 +1,59 @@
+{
+  "schema_version": "1.0",
+  "skeleton_id": "common_skeleton_v1",
+  "root": {
+    "type": "branch",
+    "choices": ["control", "data", "function", "io", "error", "module"]
+  },
+  "nodes": {
+    "/control": { "type": "branch", "choices": ["loop", "branch"] },
+    "/control/loop": { "type": "branch", "choices": ["for", "while", "iterate", "break", "continue"] },
+    "/control/loop/for": { "type": "leaf", "description": "for loop iterator" },
+    "/control/loop/while": { "type": "leaf", "description": "while conditional loop" },
+    "/control/loop/iterate": { "type": "leaf", "description": "range index loop" },
+    "/control/loop/break": { "type": "leaf", "description": "break loop" },
+    "/control/loop/continue": { "type": "leaf", "description": "continue loop" },
+    "/control/branch": { "type": "branch", "choices": ["if", "elif", "else", "switch"] },
+    "/control/branch/if": { "type": "leaf", "description": "if conditional" },
+    "/control/branch/elif": { "type": "leaf", "description": "else if conditional" },
+    "/control/branch/else": { "type": "leaf", "description": "else branch" },
+    "/control/branch/switch": { "type": "leaf", "description": "switch-case branch" },
+    "/data": { "type": "branch", "choices": ["declare", "assign", "read", "write"] },
+    "/data/declare": { "type": "leaf", "description": "variable declaration" },
+    "/data/assign": { "type": "leaf", "description": "variable assignment" },
+    "/data/read": { "type": "leaf", "description": "variable or property read" },
+    "/data/write": { "type": "leaf", "description": "variable or property write" },
+    "/function": { "type": "branch", "choices": ["define", "call", "return"] },
+    "/function/define": { "type": "leaf", "description": "function definition" },
+    "/function/call": { "type": "leaf", "description": "function invocation" },
+    "/function/return": { "type": "leaf", "description": "return statement" },
+    "/io": { "type": "branch", "choices": ["input", "output"] },
+    "/io/input": { "type": "leaf", "description": "input operation" },
+    "/io/output": { "type": "leaf", "description": "output operation" },
+    "/error": { "type": "branch", "choices": ["try", "catch", "raise"] },
+    "/error/try": { "type": "leaf", "description": "try block" },
+    "/error/catch": { "type": "leaf", "description": "catch/except block" },
+    "/error/raise": { "type": "leaf", "description": "raise/throw error" },
+    "/module": { "type": "branch", "choices": ["import", "import_as", "from_import", "include_system", "include_local", "source"] },
+    "/module/import": { "type": "leaf", "description": "module import" },
+    "/module/import_as": { "type": "leaf", "description": "module import with alias" },
+    "/module/from_import": { "type": "leaf", "description": "from module import" },
+    "/module/include_system": { "type": "leaf", "description": "system header include" },
+    "/module/include_local": { "type": "leaf", "description": "local header include" },
+    "/module/source": { "type": "leaf", "description": "script source import" }
+  },
+  "skeletons": {
+    "c": {
+      "header": "#include <stdio.h>\n#include <stdbool.h>\n",
+      "footer": ""
+    },
+    "python": {
+      "header": "",
+      "footer": ""
+    },
+    "shell": {
+      "header": "#!/usr/bin/env bash\nset -euo pipefail\n",
+      "footer": ""
+    }
+  }
+}

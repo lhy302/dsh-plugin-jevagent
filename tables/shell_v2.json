@@ -1,0 +1,153 @@
+{
+  "schema_version": "1.0",
+  "table_id": "shell_v2",
+  "target_language": "shell",
+  "skeleton_ref": "common_skeleton_v1",
+  "core_conformance": {
+    "/core/define": {
+      "status": "conditional",
+      "node": "/shell/function/define",
+      "requires": ["函数体以闭合 } 收尾"]
+    },
+    "/core/return": "/shell/function/return",
+    "/core/if": "/shell/control/if",
+    "/core/elif": "/shell/control/elif",
+    "/core/else": "/shell/control/else",
+    "/core/loop/for": "/shell/control/for",
+    "/core/loop/while": "/shell/control/while",
+    "/core/loop/break": "/shell/control/loop/break",
+    "/core/loop/continue": "/shell/control/loop/continue",
+    "/core/var/declare": "/shell/data/assign",
+    "/core/io/output": "/shell/io/output",
+    "/core/io/input": "/shell/io/input"
+  },
+  "required_imports": {},
+  "confusions": [],
+  "keyword_blacklist": [
+    "if", "then", "else", "elif", "fi", "while", "do", "done", "for",
+    "in", "case", "esac", "function", "return", "exit", "echo", "read", "local"
+  ],
+  "root": {
+    "type": "branch",
+    "choices": ["control", "data", "function", "io", "error", "module"]
+  },
+  "semantic_mappings": {
+    "/semantic/function/define": "/shell/function/define",
+    "/semantic/function/call": "/shell/function/call",
+    "/semantic/function/return": "/shell/function/return",
+    "/semantic/control/branch/if": "/shell/control/if",
+    "/semantic/control/branch/elif": "/shell/control/elif",
+    "/semantic/control/branch/else": "/shell/control/else",
+    "/semantic/control/loop/for": "/shell/control/for",
+    "/semantic/control/loop/while": "/shell/control/while",
+    "/semantic/control/loop/break": "/shell/control/loop/break",
+    "/semantic/control/loop/continue": "/shell/control/loop/continue",
+    "/semantic/data/declare": "/shell/data/assign",
+    "/semantic/data/assign": "/shell/data/assign",
+    "/semantic/io/output": "/shell/io/output",
+    "/semantic/io/input": "/shell/io/input",
+    "/semantic/module/import": "/shell/module/source",
+    "/semantic/module/import/local": "/shell/module/source"
+  },
+  "nodes": {
+    "/shell/function/define": {
+      "type": "leaf",
+      "template": "{func_name}() {",
+      "spec_template": "定义 {func_name}():",
+      "slots": ["func_name"],
+      "maps_from": ["/semantic/function/define"]
+    },
+    "/shell/function/call": {
+      "type": "leaf",
+      "template": "{func_name} {args}",
+      "spec_template": "{func_name}({args})",
+      "slots": ["func_name", "args"],
+      "maps_from": ["/semantic/function/call"]
+    },
+    "/shell/function/return": {
+      "type": "leaf",
+      "template": "return {expr}",
+      "spec_template": "返回 {expr}",
+      "slots": ["expr"],
+      "maps_from": ["/semantic/function/return"]
+    },
+    "/shell/control/if": {
+      "type": "leaf",
+      "template": "if [ {cond} ]; then",
+      "spec_template": "如果 {cond}:",
+      "slots": ["cond"],
+      "maps_from": ["/semantic/control/branch/if"]
+    },
+    "/shell/control/elif": {
+      "type": "leaf",
+      "template": "elif [ {cond} ]; then",
+      "spec_template": "否则如果 {cond}:",
+      "slots": ["cond"],
+      "maps_from": ["/semantic/control/branch/elif"]
+    },
+    "/shell/control/else": {
+      "type": "leaf",
+      "template": "else",
+      "spec_template": "否则:",
+      "slots": [],
+      "maps_from": ["/semantic/control/branch/else"]
+    },
+    "/shell/control/loop/break": {
+      "type": "leaf",
+      "template": "break",
+      "spec_template": "跳出",
+      "slots": [],
+      "maps_from": ["/semantic/control/loop/break"]
+    },
+    "/shell/control/loop/continue": {
+      "type": "leaf",
+      "template": "continue",
+      "spec_template": "继续",
+      "slots": [],
+      "maps_from": ["/semantic/control/loop/continue"]
+    },
+    "/shell/control/for": {
+      "type": "leaf",
+      "template": "for {var} in {iter}; do",
+      "spec_template": "对于 {var} 中的 {iter}:",
+      "slots": ["var", "iter"],
+      "maps_from": ["/semantic/control/loop/for"]
+    },
+    "/shell/control/while": {
+      "type": "leaf",
+      "template": "while [ {cond} ]; do",
+      "spec_template": "当 {cond}:",
+      "slots": ["cond"],
+      "maps_from": ["/semantic/control/loop/while"]
+    },
+    "/shell/data/assign": {
+      "type": "leaf",
+      "template": "{var}={expr}",
+      "spec_template": "设 {var} = {expr}",
+      "slots": ["var", "expr"],
+      "maps_from": ["/semantic/data/declare", "/semantic/data/assign"]
+    },
+    "/shell/io/output": {
+      "type": "leaf",
+      "template": "echo \"{expr}\"",
+      "spec_template": "输出({expr})",
+      "slots": ["expr"],
+      "maps_from": ["/semantic/io/output"]
+    },
+    "/shell/io/input": {
+      "type": "leaf",
+      "template": "read -r {var}",
+      "spec_template": "输入({var})",
+      "slots": ["var"],
+      "maps_from": ["/semantic/io/input"]
+    },
+    "/shell/module/source": {
+      "type": "leaf",
+      "template": ". {path}",
+      "spec_template": "引入 {path}",
+      "slots": ["path"],
+      "placement": "imports",
+      "maps_from": ["/semantic/module/import"]
+    }
+  }
+}
