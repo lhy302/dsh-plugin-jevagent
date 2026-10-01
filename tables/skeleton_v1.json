@@ -54,6 +54,10 @@
     "shell": {
       "header": "#!/usr/bin/env bash\nset -euo pipefail\n",
       "footer": ""
+    },
+    "javascript": {
+      "header": "",
+      "footer": ""
     }
   }
 }

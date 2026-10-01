@@ -107,7 +107,7 @@ JevAgent 采用严格的三分块类别机制，处理对齐检查与代码落�
    ```json
    {
      "dependencies": {
-       "dsh-plugin-jevagent": "^3.0.0"
+       "dsh-plugin-jevagent": "^3.1.0"
      },
      "dsh": {
        "profile": {

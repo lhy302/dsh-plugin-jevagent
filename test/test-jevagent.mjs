@@ -34,7 +34,8 @@ import {
   actionJevDecision,
   actionGetConfig,
   actionSetConfig,
-  runJevAgent
+  runJevAgent,
+  createJevGuard
 } from '../lib/index.js';
 
 import { RouterEngine } from '../lib/router.js';
@@ -341,9 +342,9 @@ async function runTests() {
   console.log('\n16. Testing check_tables...');
   const ctRes = await actionCheckTables({}, ctxState);
   assert.strictEqual(ctRes.core_table, 'syntax_core_v1');
-  assert.strictEqual(ctRes.matrix.columns.length, 3);
+  assert.strictEqual(ctRes.matrix.columns.length, 4);
   assert.ok(ctRes.matrix.rows.length >= 12);
-  console.log('   ✓ check_tables passed: coverage matrix generated for all 3 languages');
+  console.log('   ✓ check_tables passed: coverage matrix generated for all 4 languages (python, c, shell, javascript)');
 
   // 18. Test actionSpecToSpec (Cross-language migration)
   console.log('\n17. Testing spec_to_spec...');
@@ -359,10 +360,103 @@ async function runTests() {
   assert.ok(!seRes.export_content.includes('node:'));
   console.log('   ✓ spec_export passed: clean read-only spec without node annotations');
 
+  // 20. Test JavaScript language support & self-hosting capability
+  console.log('\n19. Testing JavaScript language support & self-hosting capability...');
+  const jsModule = path.join(TEST_TMP_DIR, 'js_sample');
+  const jsSpecFile = `${jsModule}.spec.javascript.dsl`;
+  const jsSpecContent = [
+    '// @jev-block:names:begin',
+    '库 node:path 作为 path',
+    '// @jev-block:names:end',
+    '// @jev-block:main:begin',
+    '引入 { join } 从 \'node:path\'',
+    '定义 计算路径(目录: str, 文件: str):',
+    '    设 完整路径 = join(目录, 文件)',
+    '    返回 完整路径',
+    '导出 { 计算路径 }',
+    '// @jev-block:main:end'
+  ].join('\n');
+  fs.writeFileSync(jsSpecFile, jsSpecContent, 'utf8');
+
+  // Check spec
+  const jsCheckRes = await actionCheckSpec({ module_path: jsModule, target_lang: 'javascript' }, ctxState);
+  assert.strictEqual(jsCheckRes.ok, true, 'JS spec must pass check_spec');
+
+  // Generate JS code
+  const jsCodeRes = await actionSpecToCode({ module_path: jsModule, target_lang: 'javascript' }, ctxState);
+  assert.strictEqual(jsCodeRes.status, 'success');
+  const jsCodeFile = `${jsModule}.js`;
+  assert.ok(fs.existsSync(jsCodeFile), 'JS code file must be generated');
+  const generatedJsCode = fs.readFileSync(jsCodeFile, 'utf8');
+  assert.ok(generatedJsCode.includes("import { join } from 'node:path';") || generatedJsCode.includes("import { join } from \"node:path\";"), 'Must include ES import');
+  assert.ok(generatedJsCode.includes('function 计算路径(目录, 文件) {'), 'Must generate JS function');
+  assert.ok(generatedJsCode.includes('const 完整路径 = join(目录, 文件);'), 'Must generate const declaration');
+
+  // Test executing generated JS code using Node.js
+  const testJsRunner = path.join(TEST_TMP_DIR, 'test_js_runner.mjs');
+  const testJsRunnerCode = [
+    `import { 计算路径 } from './js_sample.js';`,
+    `const p = 计算路径('src', 'index.js');`,
+    `if (!p.includes('src') || !p.includes('index.js')) throw new Error('Path calculation failed');`
+  ].join('\n');
+  fs.writeFileSync(testJsRunner, testJsRunnerCode, 'utf8');
+
+  const { execSync } = await import('node:child_process');
+  execSync(`"${process.execPath}" "${testJsRunner}"`, { cwd: TEST_TMP_DIR });
+
+  // Test reverse translation: code_to_spec for JavaScript
+  const jsRevRes = await actionCodeToSpec({ module_path: jsModule, target_lang: 'javascript' }, ctxState);
+  assert.strictEqual(jsRevRes.status, 'success');
+  const restoredJsSpec = fs.readFileSync(jsSpecFile, 'utf8');
+  assert.ok(restoredJsSpec.includes('node:/javascript/function/define'), 'Reversed spec must contain JS function define annotation');
+  console.log('   ✓ JavaScript language end-to-end support passed (generation, execution, reverse translation)');
+
+  // 20. Testing JevGuard: Direct code write interception & confirmation pass-through
+  console.log('\n20. Testing JevGuard (direct code write interception & confirmation)...');
+  const guard = createJevGuard(ctxState);
+  const nextMock = () => Promise.resolve({ kind: 'allow' });
+
+  // 20.1 First write to a python code file -> intercepted with deny and reminder
+  const g1 = await guard.preExecute({ name: 'write', arguments: { file_path: 'app.py', content: 'print(1)' } }, nextMock);
+  assert.strictEqual(g1.kind, 'deny', 'First attempt to write app.py must be denied');
+  assert.ok(g1.reason.includes('JevAgent 防幻觉保护提醒'), 'Must include JevGuard reminder header');
+  assert.ok(g1.reason.includes('app.spec.python.dsl'), 'Must include spec DSL recommendation');
+
+  // 20.2 Immediate second write to app.py within 60s -> confirmed and allowed
+  const g2 = await guard.preExecute({ name: 'write', arguments: { file_path: 'app.py', content: 'print(1)' } }, nextMock);
+  assert.strictEqual(g2.kind, 'allow', 'Second attempt within 60s must be allowed (secondary confirmation)');
+
+  // 20.3 Edit with explicit confirm_direct_write flag -> allowed immediately
+  const g3 = await guard.preExecute({ name: 'edit', arguments: { file_path: 'main.js', old_string: 'a', new_string: 'b', confirm_direct_write: true } }, nextMock);
+  assert.strictEqual(g3.kind, 'allow', 'Edit with confirm_direct_write: true must be allowed immediately');
+
+  // 20.4 Writing spec DSL -> NEVER intercepted
+  const g4 = await guard.preExecute({ name: 'write', arguments: { file_path: 'calc.spec.javascript.dsl', content: '...' } }, nextMock);
+  assert.strictEqual(g4.kind, 'allow', 'Writing spec DSL must never be intercepted');
+
+  // 20.5 Writing markdown / docs -> NEVER intercepted
+  const g5 = await guard.preExecute({ name: 'write', arguments: { file_path: 'README.md', content: '# Hello' } }, nextMock);
+  assert.strictEqual(g5.kind, 'allow', 'Writing markdown docs must never be intercepted');
+
+  // 20.6 Reading code file -> NEVER intercepted ("读不拦着")
+  const g6 = await guard.preExecute({ name: 'read', arguments: { file_path: 'app.py' } }, nextMock);
+  assert.strictEqual(g6.kind, 'allow', 'Reading code files must never be intercepted');
+
+  // 20.7 Guard disabled via jev_enabled: false -> pass-through directly
+  const disabledState = {
+    jevClient: { getConfig: () => ({ jev_enabled: false }) },
+    config: { guard_direct_code_write: true }
+  };
+  const disabledGuard = createJevGuard(disabledState);
+  const g7 = await disabledGuard.preExecute({ name: 'write', arguments: { file_path: 'core.c', content: 'int x;' } }, nextMock);
+  assert.strictEqual(g7.kind, 'allow', 'When jev_enabled: false, code writes must pass through without interception');
+
+  console.log('   ✓ JevGuard direct code write interception, reminder, and confirmation pass-through verified');
+
   // Cleanup tmp dir
   fs.rmSync(TEST_TMP_DIR, { recursive: true, force: true });
 
-  console.log('\n=== All 18 test suites and regression assertions passed successfully! ===');
+  console.log('\n=== All 20 test suites and regression assertions passed successfully! ===');
 }
 
 runTests().catch(err => {

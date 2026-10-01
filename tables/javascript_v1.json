@@ -1,0 +1,259 @@
+{
+  "schema_version": "1.0",
+  "table_id": "javascript_v1",
+  "target_language": "javascript",
+  "skeleton_ref": "common_skeleton_v1",
+  "core_conformance": {
+    "/core/define": "/javascript/function/define",
+    "/core/return": "/javascript/function/return",
+    "/core/if": "/javascript/control/if",
+    "/core/elif": "/javascript/control/elif",
+    "/core/else": "/javascript/control/else",
+    "/core/loop/for": "/javascript/control/for",
+    "/core/loop/while": "/javascript/control/while",
+    "/core/loop/break": "/javascript/control/loop/break",
+    "/core/loop/continue": "/javascript/control/loop/continue",
+    "/core/var/declare": "/javascript/data/declare",
+    "/core/io/output": "/javascript/io/output",
+    "/core/io/input": {
+      "status": "conditional",
+      "node": "/javascript/io/input",
+      "requires": ["运行环境支持标准输入或提供 readline 接口"]
+    }
+  },
+  "required_imports": {
+    "readFile": "node:fs",
+    "readFileSync": "node:fs",
+    "writeFile": "node:fs",
+    "writeFileSync": "node:fs",
+    "join": "node:path",
+    "resolve": "node:path",
+    "dirname": "node:path",
+    "basename": "node:path"
+  },
+  "confusions": [
+    {
+      "wrong": "print",
+      "right": "/javascript/io/output",
+      "action": "correct",
+      "hint": "JavaScript 中请使用 console.log() 或 输出()"
+    },
+    {
+      "wrong": "printf",
+      "right": "/javascript/io/output",
+      "action": "correct",
+      "hint": "JavaScript 中请使用 console.log() 或 输出()"
+    },
+    {
+      "wrong": "len",
+      "right": null,
+      "action": "error",
+      "hint": "JavaScript 无 len()，请使用 .length 属性"
+    }
+  ],
+  "keyword_blacklist": [
+    "const", "let", "var", "function", "class", "import", "export",
+    "from", "as", "default", "return", "if", "else", "while", "for",
+    "of", "in", "break", "continue", "switch", "case", "try", "catch",
+    "finally", "throw", "new", "this", "super", "extends", "async",
+    "await", "yield", "typeof", "instanceof", "void", "delete",
+    "true", "false", "null", "undefined", "NaN", "Infinity",
+    "console", "Math", "JSON", "Promise", "Set", "Map", "Array",
+    "Object", "RegExp", "String", "Number", "Boolean", "Symbol",
+    "Error", "process", "Buffer", "setTimeout", "clearTimeout"
+  ],
+  "root": {
+    "type": "branch",
+    "choices": ["control", "data", "function", "io", "error", "module", "concurrency"]
+  },
+  "semantic_mappings": {
+    "/semantic/function/define": "/javascript/function/define",
+    "/semantic/function/call": "/javascript/function/call",
+    "/semantic/function/return": "/javascript/function/return",
+    "/semantic/control/branch/if": "/javascript/control/if",
+    "/semantic/control/branch/elif": "/javascript/control/elif",
+    "/semantic/control/branch/else": "/javascript/control/else",
+    "/semantic/control/loop/for": "/javascript/control/for",
+    "/semantic/control/loop/while": "/javascript/control/while",
+    "/semantic/control/loop/break": "/javascript/control/loop/break",
+    "/semantic/control/loop/continue": "/javascript/control/loop/continue",
+    "/semantic/data/declare": "/javascript/data/declare",
+    "/semantic/data/assign": "/javascript/data/assign",
+    "/semantic/io/output": "/javascript/io/output",
+    "/semantic/io/input": "/javascript/io/input",
+    "/semantic/module/import": "/javascript/module/import",
+    "/semantic/module/import/local": "/javascript/module/import"
+  },
+  "nodes": {
+    "/javascript/function/define": {
+      "domain": "func",
+      "type": "leaf",
+      "template": "function {func_name}({args}) {",
+      "spec_template": "定义 {func_name}({args}):",
+      "slots": ["func_name", "args"],
+      "maps_from": ["/semantic/function/define"]
+    },
+    "/javascript/function/async_define": {
+      "domain": "func",
+      "type": "leaf",
+      "template": "async function {func_name}({args}) {",
+      "spec_template": "异步定义 {func_name}({args}):",
+      "slots": ["func_name", "args"]
+    },
+    "/javascript/function/call": {
+      "domain": "func",
+      "type": "leaf",
+      "template": "{call};",
+      "spec_template": "{call}",
+      "slots": ["call"],
+      "maps_from": ["/semantic/function/call"]
+    },
+    "/javascript/function/return": {
+      "domain": "func",
+      "type": "leaf",
+      "template": "return {expr};",
+      "spec_template": "返回 {expr}",
+      "slots": ["expr"],
+      "maps_from": ["/semantic/function/return"]
+    },
+    "/javascript/control/if": {
+      "domain": "ctrl",
+      "type": "leaf",
+      "template": "if ({cond}) {",
+      "spec_template": "如果 {cond}:",
+      "slots": ["cond"],
+      "maps_from": ["/semantic/control/branch/if"]
+    },
+    "/javascript/control/elif": {
+      "domain": "ctrl",
+      "type": "leaf",
+      "template": "} else if ({cond}) {",
+      "spec_template": "否则如果 {cond}:",
+      "slots": ["cond"],
+      "maps_from": ["/semantic/control/branch/elif"]
+    },
+    "/javascript/control/else": {
+      "domain": "ctrl",
+      "type": "leaf",
+      "template": "} else {",
+      "spec_template": "否则:",
+      "slots": [],
+      "maps_from": ["/semantic/control/branch/else"]
+    },
+    "/javascript/control/while": {
+      "domain": "ctrl",
+      "type": "leaf",
+      "template": "while ({cond}) {",
+      "spec_template": "当 {cond}:",
+      "slots": ["cond"],
+      "maps_from": ["/semantic/control/loop/while"]
+    },
+    "/javascript/control/for": {
+      "domain": "ctrl",
+      "type": "leaf",
+      "template": "for (const {var} of {iter}) {",
+      "spec_template": "对于 {var} 中的 {iter}:",
+      "slots": ["var", "iter"],
+      "maps_from": ["/semantic/control/loop/for"]
+    },
+    "/javascript/control/loop/break": {
+      "domain": "ctrl",
+      "type": "leaf",
+      "template": "break;",
+      "spec_template": "跳出",
+      "slots": [],
+      "maps_from": ["/semantic/control/loop/break"]
+    },
+    "/javascript/control/loop/continue": {
+      "domain": "ctrl",
+      "type": "leaf",
+      "template": "continue;",
+      "spec_template": "继续",
+      "slots": [],
+      "maps_from": ["/semantic/control/loop/continue"]
+    },
+    "/javascript/data/declare": {
+      "domain": "data",
+      "type": "leaf",
+      "template": "const {var} = {expr};",
+      "spec_template": "设 {var} = {expr}",
+      "slots": ["var", "expr"],
+      "maps_from": ["/semantic/data/declare"]
+    },
+    "/javascript/data/assign": {
+      "domain": "data",
+      "type": "leaf",
+      "template": "{var} = {expr};",
+      "spec_template": "{var} = {expr}",
+      "slots": ["var", "expr"],
+      "maps_from": ["/semantic/data/assign"]
+    },
+    "/javascript/io/output": {
+      "domain": "io",
+      "type": "leaf",
+      "template": "console.log({expr});",
+      "spec_template": "输出({expr})",
+      "slots": ["expr"],
+      "maps_from": ["/semantic/io/output"]
+    },
+    "/javascript/io/input": {
+      "domain": "io",
+      "type": "leaf",
+      "template": "prompt({expr})",
+      "spec_template": "输入({expr})",
+      "slots": ["expr"],
+      "maps_from": ["/semantic/io/input"]
+    },
+    "/javascript/error/try": {
+      "domain": "err",
+      "type": "leaf",
+      "template": "try {",
+      "spec_template": "尝试:",
+      "slots": []
+    },
+    "/javascript/error/catch": {
+      "domain": "err",
+      "type": "leaf",
+      "template": "} catch ({err}) {",
+      "spec_template": "捕获 {err}:",
+      "slots": ["err"]
+    },
+    "/javascript/error/finally": {
+      "domain": "err",
+      "type": "leaf",
+      "template": "} finally {",
+      "spec_template": "最终:",
+      "slots": []
+    },
+    "/javascript/error/throw": {
+      "domain": "err",
+      "type": "leaf",
+      "template": "throw {expr};",
+      "spec_template": "抛出 {expr}",
+      "slots": ["expr"]
+    },
+    "/javascript/concurrency/await": {
+      "domain": "conc",
+      "type": "leaf",
+      "template": "await {expr}",
+      "spec_template": "等待 {expr}",
+      "slots": ["expr"]
+    },
+    "/javascript/module/import": {
+      "domain": "mod",
+      "type": "leaf",
+      "template": "import {names} from '{module}';",
+      "spec_template": "引入 {names} 从 '{module}'",
+      "slots": ["names", "module"],
+      "placement": "imports",
+      "maps_from": ["/semantic/module/import"]
+    },
+    "/javascript/module/export": {
+      "domain": "mod",
+      "type": "leaf",
+      "template": "export { {names} };",
+      "spec_template": "导出 {names}",
+      "slots": ["names"]
+    }
+  }
+}
