@@ -35,7 +35,8 @@ import {
   actionGetConfig,
   actionSetConfig,
   runJevAgent,
-  createJevGuard
+  createJevGuard,
+  actionAutoMark,
 } from '../lib/index.js';
 
 import { RouterEngine } from '../lib/router.js';
@@ -451,12 +452,76 @@ async function runTests() {
   const g7 = await disabledGuard.preExecute({ name: 'write', arguments: { file_path: 'core.c', content: 'int x;' } }, nextMock);
   assert.strictEqual(g7.kind, 'allow', 'When jev_enabled: false, code writes must pass through without interception');
 
-  console.log('   ✓ JevGuard direct code write interception, reminder, and confirmation pass-through verified');
+  // 20.8 Pure @jev-block annotation edit -> MUST PASS THROUGH IMMEDIATELY without denial!
+  const codeBefore = 'def calculate(x):\n    return x * 2';
+  const codeAnnotated = '# @jev-block:calc_001:begin\ndef calculate(x):\n    return x * 2\n# @jev-block:calc_001:end';
+  const g8 = await guard.preExecute({
+    name: 'edit',
+    arguments: { file_path: 'math_tool.py', old_string: codeBefore, new_string: codeAnnotated }
+  }, nextMock);
+  assert.strictEqual(g8.kind, 'allow', 'Editing solely to insert @jev-block markers must pass through immediately without interception');
+
+  // 20.9 Edit modifying executable code -> MUST BE DENIED on first attempt
+  const codeModified = '# @jev-block:calc_001:begin\ndef calculate(x):\n    return x * 3\n# @jev-block:calc_001:end';
+  const g9 = await guard.preExecute({
+    name: 'edit',
+    arguments: { file_path: 'math_tool2.py', old_string: codeBefore, new_string: codeModified }
+  }, nextMock);
+  assert.strictEqual(g9.kind, 'deny', 'Editing that modifies executable code must still be denied on first attempt');
+
+  console.log('   ✓ JevGuard direct code write interception, pure-annotation pass-through, and confirmation verified');
+
+  // 21. Testing auto_mark (Automatic code demarcation and zero-manual-editing onboarding)
+  console.log('\n21. Testing auto_mark (AST / language heuristic auto-demarcation)...');
+  const unmarkedModule = path.join(TEST_TMP_DIR, 'unmarked_service');
+  const unmarkedCodeFile = `${unmarkedModule}.py`;
+  const unmarkedPySource = [
+    'import os',
+    'import sys',
+    '',
+    'def auth_user(username, token):',
+    '    if not username or not token:',
+    '        return False',
+    '    return True',
+    '',
+    'def check_token(token):',
+    '    return len(token) > 8',
+    '',
+    'class UserManager:',
+    '    def __init__(self):',
+    '        self.users = []',
+    '',
+    'if __name__ == "__main__":',
+    '    print("Service ready")',
+    ''
+  ].join('\n');
+  fs.writeFileSync(unmarkedCodeFile, unmarkedPySource, 'utf8');
+
+  const autoMarkRes = await actionAutoMark({
+    module_path: unmarkedModule,
+    target_lang: 'python',
+    generate_spec: true
+  }, ctxState);
+
+  assert.strictEqual(autoMarkRes.status, 'success');
+  assert.strictEqual(autoMarkRes.blocks_count, 5, 'Should identify imports, 2 functions, 1 class, 1 runner');
+  const markedCodeOnDisk = fs.readFileSync(unmarkedCodeFile, 'utf8');
+  assert.ok(markedCodeOnDisk.includes('# @jev-block:imports:begin'), 'Code should have imports marker');
+  assert.ok(markedCodeOnDisk.includes('# @jev-block:auth_user_001:begin'), 'Code should have auth_user marker');
+  assert.ok(markedCodeOnDisk.includes('# @jev-block:UserManager_001:begin'), 'Code should have UserManager marker');
+  assert.ok(fs.existsSync(autoMarkRes.spec_dsl), 'Spec DSL should be automatically generated when generate_spec: true');
+
+  // Verify alignment of newly marked module
+  const alignCheck = await actionCheckAlignment({ module_path: unmarkedModule, target_lang: 'python' }, ctxState);
+  assert.strictEqual(alignCheck.status, 'success');
+  assert.strictEqual(alignCheck.report.aligned, true, 'Auto-marked code and generated spec DSL must be perfectly aligned');
+
+  console.log('   ✓ auto_mark passed: 5 blocks automatically marked and aligned with generated spec DSL');
 
   // Cleanup tmp dir
   fs.rmSync(TEST_TMP_DIR, { recursive: true, force: true });
 
-  console.log('\n=== All 20 test suites and regression assertions passed successfully! ===');
+  console.log('\n=== All 21 test suites and regression assertions passed successfully! ===');
 }
 
 runTests().catch(err => {
