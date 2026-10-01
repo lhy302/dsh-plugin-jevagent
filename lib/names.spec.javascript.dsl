@@ -1,3 +1,30 @@
+// @jev-block:names:begin
+变量 blockContent: str
+变量 syntaxKeywords: list
+变量 entries: list
+变量 errors: list
+变量 lines: list
+变量 seenNames: Map
+变量 kwSet: Set
+变量 i: int
+变量 rawLine: str
+变量 lineNo: int
+变量 trimmed: str
+变量 libMatch: Any
+变量 varMatch: Any
+变量 constMatch: Any
+变量 funcMatch: Any
+变量 name: str
+变量 alias: str
+变量 type: str
+变量 valStr: str
+变量 inferredType: let
+变量 val: let
+变量 params: list
+变量 retType: str
+变量 entry: Any
+// @jev-block:names:end
+
 // names.js — Symbol Universe parser and module-isolated environment
 // Conforms to JevAgent Design Spec V2.0 Section 2, 12.5 & Engineering Spec V3.0 Section 8
 
@@ -105,8 +132,8 @@
       设 valStr = constMatch[2].trim()          // node:/javascript/data/declare
       如果 kwSet.has(name):                             // node:/javascript/control/if
         errors.push({ line: lineNo, message: `常量名 '${name}' 与保留语法关键字冲突` })
-      设 inferredType = 'str'          // node:/javascript/data/declare
-      设 val = valStr          // node:/javascript/data/declare
+      设 inferredType: let = 'str'          // node:/javascript/data/declare
+      设 val: let = valStr          // node:/javascript/data/declare
       如果 /^-?\d+$/.test(valStr):                             // node:/javascript/control/if
         inferredType = 'int'                               // node:/javascript/data/assign
         val = parseInt(valStr, 10)                               // node:/javascript/data/assign
@@ -123,7 +150,7 @@
       seenNames.set(name, 'const')                               // node:/javascript/function/call
       继续                                       // node:/javascript/control/loop/continue
 
-    设 funcMatch = trimmed.match(/^函数\s+([a-zA-Z0-9_\u4e00-\u9fa5]+)\s*\((.*?)\)(?:\s*->\s*(.+))?$/)          // node:/javascript/data/declare
+    设 funcMatch = trimmed.match(/^(?:函数|定义)\s+([a-zA-Z0-9_\u4e00-\u9fa5]+)\s*\((.*?)\)(?:\s*->\s*(.+))?$/)          // node:/javascript/data/declare
     如果 funcMatch:                             // node:/javascript/control/if
       设 name = funcMatch[1]          // node:/javascript/data/declare
       设 params = (funcMatch[2] || '').split(',').map(p => p.trim()).filter(Boolean)          // node:/javascript/data/declare
@@ -134,7 +161,7 @@
       seenNames.set(name, 'func')                               // node:/javascript/function/call
       继续                                       // node:/javascript/control/loop/continue
 
-    errors.push({ line: lineNo, message: `names 块中无法解析的条目: '${trimmed}'。必须为 库/变量/常量/函数 之一。` })
+    errors.push({ line: lineNo, message: `names 块中无法解析的条目: '${trimmed}'。必须为 库/变量/常量/函数/定义 之一。` })
 
   返回 { entries, errors, env: new NamesEnv(entries) }                               // node:/javascript/function/return
 // @jev-block:parse_names_003:end
