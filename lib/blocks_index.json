@@ -1,0 +1,131 @@
+{
+  "module": "names",
+  "blocks": [
+    {
+      "block_id": "names_entry_001",
+      "category": "emitting",
+      "migration_class": "verbatim",
+      "files": {
+        "spec": {
+          "javascript": "names.spec.javascript.dsl"
+        },
+        "code": {
+          "javascript": "names.js"
+        }
+      },
+      "symbols_defined": [],
+      "symbols_used": [],
+      "status": "confirmed"
+    },
+    {
+      "block_id": "names_env_002",
+      "category": "emitting",
+      "migration_class": "verbatim",
+      "files": {
+        "spec": {
+          "javascript": "names.spec.javascript.dsl"
+        },
+        "code": {
+          "javascript": "names.js"
+        }
+      },
+      "symbols_defined": [
+        "e"
+      ],
+      "symbols_used": [
+        "entries"
+      ],
+      "status": "confirmed"
+    },
+    {
+      "block_id": "parse_names_003",
+      "category": "emitting",
+      "migration_class": "verbatim",
+      "files": {
+        "spec": {
+          "javascript": "names.spec.javascript.dsl"
+        },
+        "code": {
+          "javascript": "names.js"
+        }
+      },
+      "symbols_defined": [
+        "entries",
+        "errors",
+        "lines",
+        "seenNames",
+        "kwSet",
+        "i",
+        "rawLine",
+        "lineNo",
+        "trimmed",
+        "libMatch",
+        "name",
+        "alias",
+        "entry",
+        "varMatch",
+        "type",
+        "constMatch",
+        "valStr",
+        "inferredType",
+        "val",
+        "funcMatch",
+        "params",
+        "retType"
+      ],
+      "symbols_used": [
+        "node",
+        "javascript",
+        "data",
+        "declare",
+        "blockContent",
+        "split",
+        "syntaxKeywords",
+        "range(lines.length)",
+        "lines",
+        "i",
+        "rawLine",
+        "trim",
+        "trimmed",
+        "match",
+        "s",
+        "a",
+        "zA",
+        "Z0",
+        "u4e00",
+        "u9fa5",
+        "libMatch",
+        "name",
+        "NamesEntry",
+        "kind",
+        "alias",
+        "line",
+        "lineNo",
+        "varMatch",
+        "constMatch",
+        "valStr",
+        "funcMatch",
+        "map",
+        "p",
+        "filter"
+      ],
+      "status": "confirmed"
+    },
+    {
+      "block_id": "imports",
+      "category": "hoisted",
+      "migration_class": "verbatim",
+      "files": {
+        "spec": {
+          "javascript": "names.spec.javascript.dsl"
+        },
+        "code": {
+          "javascript": "names.js"
+        }
+      },
+      "symbols_defined": [],
+      "symbols_used": [],
+      "status": "confirmed"
+    }
+  ]
+}
