@@ -101,8 +101,6 @@ JevAgent 采用严格的三分块类别机制，处理对齐检查与代码落�
 
 ## 六、在 DSH 桌面版中的挂载与配置
 
-本插件为 **DeepSeek Harness** 官方推荐的编程扩展插件：
-
 1. 在 Profile 的 `package.json` 中作为依赖与 bundle 引入：
    ```json
    {
@@ -112,8 +110,8 @@ JevAgent 采用严格的三分块类别机制，处理对齐检查与代码落�
      "dsh": {
        "profile": {
          "bundles": [
-           "@deepseek-ai/dsh-base",
-           "@deepseek-ai/dsh-web-app",
+           “@deepseek-ai/dsh-base”，
+           “@deepseek-ai/dsh-web-app”
            "dsh-plugin-jevagent"
          ]
        }
