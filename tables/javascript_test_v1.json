@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "table_id": "javascript_test_v1",
+  "target_language": "javascript",
+  "semantic_mappings": {
+    "/semantic/io/output": "/js/io/output",
+    "/semantic/function/define": "/js/function/define"
+  },
+  "nodes": {
+    "/js/io/output": {
+      "type": "leaf",
+      "template": "console.log({expr})",
+      "spec_template": "输出({expr})",
+      "slots": [
+        "expr"
+      ],
+      "maps_from": [
+        "/semantic/io/output"
+      ]
+    },
+    "/js/function/define": {
+      "type": "leaf",
+      "template": "function {func_name}({args}) {",
+      "spec_template": "定义 {func_name}({typed_args}) -> {ret_type}:",
+      "slots": [
+        "func_name",
+        "args",
+        "typed_args",
+        "ret_type"
+      ],
+      "maps_from": [
+        "/semantic/function/define"
+      ]
+    }
+  }
+}

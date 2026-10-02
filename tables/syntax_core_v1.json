@@ -52,19 +52,19 @@
     }
   },
   "core_operators": {
-    "<=": { "python": "<=", "c": "<=", "shell": "-le" },
-    ">=": { "python": ">=", "c": ">=", "shell": "-ge" },
-    "<": { "python": "<", "c": "<", "shell": "-lt" },
-    ">": { "python": ">", "c": ">", "shell": "-gt" },
-    "==": { "python": "==", "c": "==", "shell": "-eq" },
-    "!=": { "python": "!=", "c": "!=", "shell": "-ne" },
-    "并且": { "python": "and", "c": "&&", "shell": "&&" },
-    "且": { "python": "and", "c": "&&", "shell": "&&" },
-    "或者": { "python": "or", "c": "||", "shell": "||" },
-    "或": { "python": "or", "c": "||", "shell": "||" },
-    "非": { "python": "not", "c": "!", "shell": "!" },
-    "真": { "python": "True", "c": "true", "shell": "true" },
-    "假": { "python": "False", "c": "false", "shell": "false" },
-    "空": { "python": "None", "c": "NULL", "shell": "\"\"" }
+    "<=": { "python": "<=", "c": "<=", "shell": "-le", "javascript": "<=" },
+    ">=": { "python": ">=", "c": ">=", "shell": "-ge", "javascript": ">=" },
+    "<": { "python": "<", "c": "<", "shell": "-lt", "javascript": "<" },
+    ">": { "python": ">", "c": ">", "shell": "-gt", "javascript": ">" },
+    "==": { "python": "==", "c": "==", "shell": "-eq", "javascript": "===" },
+    "!=": { "python": "!=", "c": "!=", "shell": "-ne", "javascript": "!==" },
+    "并且": { "python": "and", "c": "&&", "shell": "&&", "javascript": "&&" },
+    "且": { "python": "and", "c": "&&", "shell": "&&", "javascript": "&&" },
+    "或者": { "python": "or", "c": "||", "shell": "||", "javascript": "||" },
+    "或": { "python": "or", "c": "||", "shell": "||", "javascript": "||" },
+    "非": { "python": "not", "c": "!", "shell": "!", "javascript": "!" },
+    "真": { "python": "True", "c": "true", "shell": "true", "javascript": "true" },
+    "假": { "python": "False", "c": "false", "shell": "false", "javascript": "false" },
+    "空": { "python": "None", "c": "NULL", "shell": "\"\"", "javascript": "null" }
   }
 }

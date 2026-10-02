@@ -1,0 +1,23 @@
+{
+  "manifest_id": "manifest_2026_10_01_001",
+  "model": "two_file_v3",
+  "syntax_core": "syntax_core_v1",
+  "skeleton": "common_skeleton_v1",
+  "skeleton_applied": true,
+  "semantic": "semantic_v1",
+  "tables": {
+    "javascript": "javascript_v1"
+  },
+  "vocab": "common_v3",
+  "mappings": {
+    "javascript": "javascript_v1_semantic"
+  },
+  "required_imports_version": "1.0",
+  "core_conformance_version": "1.0",
+  "symbol_snapshot": {},
+  "names_snapshot": {},
+  "code_commit": null,
+  "spec_commit": null,
+  "jev_model": "jevk5-4b-v0.3-Q4_K_M",
+  "jevagent_version": "3.0.0"
+}

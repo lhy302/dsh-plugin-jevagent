@@ -1,7 +1,7 @@
 {
   "name": "dsh-plugin-jevagent",
-  "version": "3.0.0",
-  "description": "JevAgent plugin for DeepSeek Harness: two-file model, multi-language comment delimiters, verification firewall, import closure, core syntax conformance, and closed-set Jev decision engine",
+  "version": "3.3.0",
+  "description": "JevAgent plugin for DeepSeek Harness: two-file model, verification firewall, JevGuard anti-hallucination protection, auto-marking, JavaScript self-hosting, and syntax core",
   "type": "module",
   "main": "./lib/index.js",
   "exports": {

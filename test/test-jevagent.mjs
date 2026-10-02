@@ -34,7 +34,11 @@ import {
   actionJevDecision,
   actionGetConfig,
   actionSetConfig,
-  runJevAgent
+  runJevAgent,
+  createJevGuard,
+  actionAutoMark,
+  actionMoveModule,
+  actionDeleteModule
 } from '../lib/index.js';
 
 import { RouterEngine } from '../lib/router.js';
@@ -296,12 +300,17 @@ async function runTests() {
         candidates: ['/semantic/control/loop/for', '/semantic/control/loop/while']
       }
     );
-    assert.strictEqual(remoteDecision.provider, 'remote_jev_api', 'Provider must be remote_jev_api');
-    assert.ok(
-      remoteDecision.choice === '/semantic/control/loop/for' || remoteDecision.choice === '/semantic/control/loop/while',
-      'Choice must be one of the candidates'
-    );
-    console.log(`   ✓ BUG-01 passed: remote Jev API successfully decided choice: ${remoteDecision.choice}, provider: ${remoteDecision.provider}`);
+    if (remoteDecision.provider === 'remote_jev_api') {
+      assert.ok(
+        remoteDecision.choice === '/semantic/control/loop/for' || remoteDecision.choice === '/semantic/control/loop/while',
+        'Choice must be one of the candidates'
+      );
+      console.log(`   ✓ BUG-01 passed: remote Jev API successfully decided choice: ${remoteDecision.choice}, provider: ${remoteDecision.provider}`);
+    } else {
+      assert.strictEqual(remoteDecision.provider, 'local_heuristic_fallback', 'Fallback provider must be local_heuristic_fallback');
+      assert.strictEqual(remoteDecision.degraded, true, 'Fallback must be marked degraded');
+      console.log(`   ✓ BUG-01 passed: remote endpoint offline, cleanly degraded to ${remoteDecision.provider}`);
+    }
   } else {
     console.log('   - BUG-01 live remote check skipped (no JEV_API_KEY available in environment)');
   }
@@ -341,9 +350,9 @@ async function runTests() {
   console.log('\n16. Testing check_tables...');
   const ctRes = await actionCheckTables({}, ctxState);
   assert.strictEqual(ctRes.core_table, 'syntax_core_v1');
-  assert.strictEqual(ctRes.matrix.columns.length, 3);
+  assert.strictEqual(ctRes.matrix.columns.length, 4);
   assert.ok(ctRes.matrix.rows.length >= 12);
-  console.log('   ✓ check_tables passed: coverage matrix generated for all 3 languages');
+  console.log('   ✓ check_tables passed: coverage matrix generated for all 4 languages (python, c, shell, javascript)');
 
   // 18. Test actionSpecToSpec (Cross-language migration)
   console.log('\n17. Testing spec_to_spec...');
@@ -359,10 +368,248 @@ async function runTests() {
   assert.ok(!seRes.export_content.includes('node:'));
   console.log('   ✓ spec_export passed: clean read-only spec without node annotations');
 
+  // 20. Test JavaScript language support & self-hosting capability
+  console.log('\n19. Testing JavaScript language support & self-hosting capability...');
+  const jsModule = path.join(TEST_TMP_DIR, 'js_sample');
+  const jsSpecFile = `${jsModule}.spec.javascript.dsl`;
+  const jsSpecContent = [
+    '// @jev-block:names:begin',
+    '库 node:path 作为 path',
+    '// @jev-block:names:end',
+    '// @jev-block:main:begin',
+    '引入 { join } 从 \'node:path\'',
+    '定义 计算路径(目录: str, 文件: str):',
+    '    设 完整路径 = join(目录, 文件)',
+    '    返回 完整路径',
+    '导出 { 计算路径 }',
+    '// @jev-block:main:end'
+  ].join('\n');
+  fs.writeFileSync(jsSpecFile, jsSpecContent, 'utf8');
+
+  // Check spec
+  const jsCheckRes = await actionCheckSpec({ module_path: jsModule, target_lang: 'javascript' }, ctxState);
+  assert.strictEqual(jsCheckRes.ok, true, 'JS spec must pass check_spec');
+
+  // Generate JS code
+  const jsCodeRes = await actionSpecToCode({ module_path: jsModule, target_lang: 'javascript' }, ctxState);
+  assert.strictEqual(jsCodeRes.status, 'success');
+  const jsCodeFile = `${jsModule}.js`;
+  assert.ok(fs.existsSync(jsCodeFile), 'JS code file must be generated');
+  const generatedJsCode = fs.readFileSync(jsCodeFile, 'utf8');
+  assert.ok(generatedJsCode.includes("import { join } from 'node:path';") || generatedJsCode.includes("import { join } from \"node:path\";"), 'Must include ES import');
+  assert.ok(generatedJsCode.includes('function 计算路径(目录, 文件) {'), 'Must generate JS function');
+  assert.ok(generatedJsCode.includes('const 完整路径 = join(目录, 文件);'), 'Must generate const declaration');
+
+  // Test executing generated JS code using Node.js
+  const testJsRunner = path.join(TEST_TMP_DIR, 'test_js_runner.mjs');
+  const testJsRunnerCode = [
+    `import { 计算路径 } from './js_sample.js';`,
+    `const p = 计算路径('src', 'index.js');`,
+    `if (!p.includes('src') || !p.includes('index.js')) throw new Error('Path calculation failed');`
+  ].join('\n');
+  fs.writeFileSync(testJsRunner, testJsRunnerCode, 'utf8');
+
+  const { execSync } = await import('node:child_process');
+  execSync(`"${process.execPath}" "${testJsRunner}"`, { cwd: TEST_TMP_DIR });
+
+  // Test reverse translation: code_to_spec for JavaScript
+  const jsRevRes = await actionCodeToSpec({ module_path: jsModule, target_lang: 'javascript' }, ctxState);
+  assert.strictEqual(jsRevRes.status, 'success');
+  const restoredJsSpec = fs.readFileSync(jsSpecFile, 'utf8');
+  assert.ok(restoredJsSpec.includes('node:/javascript/function/define'), 'Reversed spec must contain JS function define annotation');
+  console.log('   ✓ JavaScript language end-to-end support passed (generation, execution, reverse translation)');
+
+  // 20. Testing JevGuard: Strict code write blocking, rename evasion prevention, and human switch
+  console.log('\n20. Testing JevGuard (strict code blocking, rename protection, and human switch)...');
+  const guard = createJevGuard(ctxState);
+  const nextMock = () => Promise.resolve({ kind: 'allow' });
+
+  // 20.1 Direct write to code file -> STRICT HARD DENIAL
+  const g1 = await guard.preExecute({ name: 'write', arguments: { file_path: 'app.py', content: 'print(1)' } }, nextMock);
+  assert.strictEqual(g1.kind, 'deny', 'Direct write to app.py must be denied');
+  assert.ok(g1.reason.includes('JevGuard 核心安全拦截'), 'Must include JevGuard strict denial header');
+  assert.ok(g1.reason.includes('代码强保护模式'), 'Must explain code strong protection mode');
+
+  // 20.2 AI repeating attempt -> MUST STILL BE HARD DENIED (No 60s auto-retry bypass for AI!)
+  const g2 = await guard.preExecute({ name: 'write', arguments: { file_path: 'app.py', content: 'print(1)' } }, nextMock);
+  assert.strictEqual(g2.kind, 'deny', 'AI retry must STILL be denied (no 60s auto-pass loophole)');
+
+  // 20.3 AI passing confirm_direct_write -> MUST STILL BE HARD DENIED (AI cannot unlock itself!)
+  const g3 = await guard.preExecute({ name: 'edit', arguments: { file_path: 'main.js', old_string: 'a', new_string: 'b', confirm_direct_write: true } }, nextMock);
+  assert.strictEqual(g3.kind, 'deny', 'AI passing confirm_direct_write must STILL be denied');
+
+  // 20.4 Shell command rename evasion: Rename-Item txt to code -> HARD DENIAL
+  const gCmd1 = await guard.preExecute({ name: 'pwsh', arguments: { command: 'Rename-Item -Path "temp.txt" -NewName "app.py"' } }, nextMock);
+  assert.strictEqual(gCmd1.kind, 'deny', 'Renaming non-code to code must be blocked');
+  assert.ok(gCmd1.reason.includes('后缀名防改与代码写入保护'), 'Must explain extension protection');
+
+  // 20.5 Shell command rename evasion: ren code to txt (shell uncloaking) -> HARD DENIAL
+  const gCmd2 = await guard.preExecute({ name: 'pwsh', arguments: { command: 'ren app.py temp.txt' } }, nextMock);
+  assert.strictEqual(gCmd2.kind, 'deny', 'Renaming code to non-code must be blocked');
+
+  // 20.6 Shell command redirection into code file -> HARD DENIAL
+  const gCmd3 = await guard.preExecute({ name: 'pwsh', arguments: { command: 'echo "hacked" > script.py' } }, nextMock);
+  assert.strictEqual(gCmd3.kind, 'deny', 'Redirection output to code file must be blocked');
+
+  // 20.7 Shell command on non-code files -> ALLOWED (normal shell operations unaffected)
+  const gCmd4 = await guard.preExecute({ name: 'pwsh', arguments: { command: 'git mv doc.md doc.txt' } }, nextMock);
+  assert.strictEqual(gCmd4.kind, 'allow', 'Renaming non-code files must be allowed');
+
+  // 20.8 Pure @jev-block annotation edit -> ALLOWED (essential for onboarding legacy code)
+  const codeBefore = 'def calculate(x):\n    return x * 2';
+  const codeAnnotated = '# @jev-block:calc_001:begin\ndef calculate(x):\n    return x * 2\n# @jev-block:calc_001:end';
+  const g8 = await guard.preExecute({
+    name: 'edit',
+    arguments: { file_path: 'math_tool.py', old_string: codeBefore, new_string: codeAnnotated }
+  }, nextMock);
+  assert.strictEqual(g8.kind, 'allow', 'Editing solely to insert @jev-block markers must be allowed');
+
+  // 20.9 Human permission switch: allow_direct_code_write: true -> ALLOWED
+  const humanApprovedState = {
+    jevClient: { getConfig: () => ({ allow_direct_code_write: true }) },
+    config: { allow_direct_code_write: true }
+  };
+  const approvedGuard = createJevGuard(humanApprovedState);
+  const gApproved = await approvedGuard.preExecute({ name: 'write', arguments: { file_path: 'app.py', content: 'print(1)' } }, nextMock);
+  assert.strictEqual(gApproved.kind, 'allow', 'When human explicitly enables allow_direct_code_write, operation must be allowed');
+
+  // 20.10 Writing spec DSL or docs, reading code -> NEVER INTERCEPTED
+  const gSpec = await guard.preExecute({ name: 'write', arguments: { file_path: 'calc.spec.javascript.dsl', content: '...' } }, nextMock);
+  assert.strictEqual(gSpec.kind, 'allow', 'Writing spec DSL must never be intercepted');
+  const gRead = await guard.preExecute({ name: 'read', arguments: { file_path: 'app.py' } }, nextMock);
+  assert.strictEqual(gRead.kind, 'allow', 'Reading code files must never be intercepted');
+
+  // 20.11 AI tool calling set_config to toggle allow_direct_code_write -> MUST BE REJECTED!
+  await assert.rejects(
+    async () => actionSetConfig({ allow_direct_code_write: true }, ctxState, { isHumanUI: false }),
+    /严禁 AI 试图通过 set_config 工具修改 allow_direct_code_write 围栏开关/,
+    'AI tool calling set_config to turn on allow_direct_code_write must be strictly blocked'
+  );
+
+  // 20.12 AI attempting to directly write/edit jevagent.json -> STRICT HARD DENIAL!
+  const gFenceWrite = await guard.preExecute({ name: 'write', arguments: { file_path: 'C:\\Users\\Administrator\\.dsh\\jevagent.json', content: '{}' } }, nextMock);
+  assert.strictEqual(gFenceWrite.kind, 'deny', 'AI tool writing to jevagent.json must be denied');
+  assert.ok(gFenceWrite.reason.includes('严禁 AI 直接修改或覆写安全围栏配置文件'), 'Must include fence config protection header');
+
+  // 20.13 AI attempting to tamper with jevagent.json via pwsh -> STRICT HARD DENIAL!
+  const gFenceCmd = await guard.preExecute({ name: 'pwsh', arguments: { command: 'Set-Content -Path "C:\\Users\\Administrator\\.dsh\\jevagent.json" -Value "{}"' } }, nextMock);
+  assert.strictEqual(gFenceCmd.kind, 'deny', 'CLI tampering with jevagent.json must be blocked');
+  assert.ok(gFenceCmd.reason.includes('安全围栏配置文件'), 'Must block CLI tampering with fence config');
+
+  // 20.14 Writing to normal non-fence project files (package.json, data.json) -> ALLOWED!
+  const gNormalWrite = await guard.preExecute({ name: 'write', arguments: { file_path: 'package.json', content: '{"name": "my-app"}' } }, nextMock);
+  assert.strictEqual(gNormalWrite.kind, 'allow', 'Writing to normal non-fence project config files must be allowed');
+
+  console.log('   ✓ JevGuard strict code write blocking, rename protection, and human switch verified');
+
+  // 21. Testing auto_mark (Automatic code demarcation and zero-manual-editing onboarding)
+  console.log('\n21. Testing auto_mark (AST / language heuristic auto-demarcation)...');
+  const unmarkedModule = path.join(TEST_TMP_DIR, 'unmarked_service');
+  const unmarkedCodeFile = `${unmarkedModule}.py`;
+  const unmarkedPySource = [
+    'import os',
+    'import sys',
+    '',
+    'def auth_user(username, token):',
+    '    if not username or not token:',
+    '        return False',
+    '    return True',
+    '',
+    'def check_token(token):',
+    '    return len(token) > 8',
+    '',
+    'class UserManager:',
+    '    def __init__(self):',
+    '        self.users = []',
+    '',
+    'if __name__ == "__main__":',
+    '    print("Service ready")',
+    ''
+  ].join('\n');
+  fs.writeFileSync(unmarkedCodeFile, unmarkedPySource, 'utf8');
+
+  const autoMarkRes = await actionAutoMark({
+    module_path: unmarkedModule,
+    target_lang: 'python',
+    generate_spec: true
+  }, ctxState);
+
+  assert.strictEqual(autoMarkRes.status, 'success');
+  assert.strictEqual(autoMarkRes.blocks_count, 5, 'Should identify imports, 2 functions, 1 class, 1 runner');
+  const markedCodeOnDisk = fs.readFileSync(unmarkedCodeFile, 'utf8');
+  assert.ok(markedCodeOnDisk.includes('# @jev-block:imports:begin'), 'Code should have imports marker');
+  assert.ok(markedCodeOnDisk.includes('# @jev-block:auth_user_001:begin'), 'Code should have auth_user marker');
+  assert.ok(markedCodeOnDisk.includes('# @jev-block:UserManager_001:begin'), 'Code should have UserManager marker');
+  assert.ok(fs.existsSync(autoMarkRes.spec_dsl), 'Spec DSL should be automatically generated when generate_spec: true');
+
+  // Verify alignment of newly marked module
+  const alignCheck = await actionCheckAlignment({ module_path: unmarkedModule, target_lang: 'python' }, ctxState);
+  assert.strictEqual(alignCheck.status, 'success');
+  assert.strictEqual(alignCheck.report.aligned, true, 'Auto-marked code and generated spec DSL must be perfectly aligned');
+
+  console.log('   ✓ auto_mark passed: 5 blocks automatically marked and aligned with generated spec DSL');
+  // 22. Testing move_module (Atomic linked moving/renaming of DSL, code, backups, and index)
+  console.log('\n22. Testing move_module (Atomic linked module moving & renaming)...');
+  const srcModule = path.join(TEST_TMP_DIR, 'unmarked_service');
+  const dstModule = path.join(TEST_TMP_DIR, 'renamed_service');
+  const moveRes = await actionMoveModule({
+    source_module: srcModule,
+    target_module: dstModule,
+    target_lang: 'python'
+  }, ctxState);
+
+  assert.strictEqual(moveRes.status, 'success');
+  assert.ok(!fs.existsSync(`${srcModule}.spec.python.dsl`), 'Old spec DSL should be moved away');
+  assert.ok(!fs.existsSync(`${srcModule}.py`), 'Old code file should be moved away');
+  assert.ok(fs.existsSync(`${dstModule}.spec.python.dsl`), 'New spec DSL should exist');
+  assert.ok(fs.existsSync(`${dstModule}.py`), 'New code file should exist');
+
+  // Verify alignment of renamed module
+  const renamedAlign = await actionCheckAlignment({ module_path: dstModule, target_lang: 'python' }, ctxState);
+  assert.strictEqual(renamedAlign.status, 'success');
+  assert.strictEqual(renamedAlign.report.aligned, true, 'Renamed module must remain perfectly aligned');
+  console.log('   ✓ move_module passed: DSL and code files atomically moved and aligned');
+
+  // 23. Testing delete_module (Safe cascaded cleanup of DSL, code, backups, and index)
+  console.log('\n23. Testing delete_module (Safe cascaded cleanup)...');
+  const delRes = await actionDeleteModule({
+    module_path: dstModule,
+    target_lang: 'python'
+  }, ctxState);
+  assert.strictEqual(delRes.status, 'success');
+  assert.ok(!fs.existsSync(`${dstModule}.spec.python.dsl`), 'Deleted spec DSL should not exist');
+  assert.ok(!fs.existsSync(`${dstModule}.py`), 'Deleted code file should not exist');
+  console.log('   ✓ delete_module passed: DSL and code files safely and cleanly deleted');
+
+  // 24. Testing Paired CLI Move vs Unlinked CLI Move in JevGuard
+  console.log('\n24. Testing Paired CLI Move vs Unlinked Move...');
+  // 24.1 Paired move: moving both DSL and code file -> ALLOWED!
+  const gPairMove = await guard.preExecute({
+    name: 'pwsh',
+    arguments: { command: 'mv auth.spec.python.dsl auth.py src/' }
+  }, nextMock);
+  assert.strictEqual(gPairMove.kind, 'allow', 'Moving both spec DSL and code file together must be allowed as linked move');
+
+  // 24.2 Paired deletion: deleting both DSL and code file -> ALLOWED!
+  const gPairDel = await guard.preExecute({
+    name: 'pwsh',
+    arguments: { command: 'rm auth.spec.python.dsl auth.py' }
+  }, nextMock);
+  assert.strictEqual(gPairDel.kind, 'allow', 'Deleting both spec DSL and code file together must be allowed as linked deletion');
+
+  // 24.3 Unlinked move: moving code file alone -> DENIED!
+  const gUnlinkedMove = await guard.preExecute({
+    name: 'pwsh',
+    arguments: { command: 'mv auth.py src/auth.py' }
+  }, nextMock);
+  assert.strictEqual(gUnlinkedMove.kind, 'deny', 'Moving code file alone without spec DSL must be blocked');
+  assert.ok(gUnlinkedMove.reason.includes('代码文件由 DSL 唯一驱动'), 'Must explain DSL-driven code file principle');
+  console.log('   ✓ Paired CLI Move vs Unlinked Move verified');
+
   // Cleanup tmp dir
   fs.rmSync(TEST_TMP_DIR, { recursive: true, force: true });
 
-  console.log('\n=== All 18 test suites and regression assertions passed successfully! ===');
+  console.log('\n=== All 24 test suites and regression assertions passed successfully! ===');
 }
 
 runTests().catch(err => {
